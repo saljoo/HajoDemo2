@@ -1,3 +1,5 @@
+School exercise on using locks in thread programming.
+
 # Hajautetut järjestelmät demonstraatiokerta 2
 
 ## Demotehtäväpohjan käyttö
