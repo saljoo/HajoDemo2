@@ -24,7 +24,10 @@ public class Remote extends Thread {
         while (true) {
             int next = rnd.nextInt(Action.values().length);
             Action nextAction = Action.values()[next];
-            List<Integer> lightIds = new ArrayList<>(hub.getLightIds());
+            List<Integer> lightIds;
+            synchronized(hub){
+                lightIds = new ArrayList<>(hub.getLightIds());
+            }
             int id = lightIds.get(rnd.nextInt(lightIds.size()));
             switch (nextAction) {
                 case TURNOFF:

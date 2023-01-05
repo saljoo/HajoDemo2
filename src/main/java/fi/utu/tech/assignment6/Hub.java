@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Hub implements Runnable {
 
@@ -16,25 +19,37 @@ public class Hub implements Runnable {
     // Mikäli terminaalisi ei osaa tulostaa lamppujen tilaa oikein, voit kokeilla asettaa tämän arvoon "true"
     private boolean ALTERNATE_OUTPUT = false;
 
+    private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private final Lock writeLock = readWriteLock.writeLock();
+
     /**
      * Creates a new light
      * 
      * @return The id of the newly-created light
      */
     public int addLight() {
-        int id = rnd.nextInt(1000);
-        lights.put(id, new Light(id));
-        return id;
+        writeLock.lock();
+        try{
+            int id = rnd.nextInt(1000);
+            lights.put(id, new Light(id));
+            return id;
+        }finally{
+            writeLock.unlock();
+        }
     }
 
     public void removeLight(int id) {
         // Täytyy tarkistaa, onko arvo vielä olemassa,
         // sillä joku saattoi lukulukosta kirjoituslukkoon vaihtamisen
         // aikana poistaa saman avaimen
-        if (lights.containsKey(id)) {
-            lights.remove(id);
+        writeLock.lock();
+        try{
+            if (lights.containsKey(id)) {
+                lights.remove(id);
+            }
+        }finally{
+            writeLock.unlock();
         }
-
     }
 
     public void toggleLight(int id) {
@@ -84,8 +99,13 @@ public class Hub implements Runnable {
      * Turn off all the lights
      */
     public void turnOffAllLights() {
-        for (var l : lights.values()) {
-            l.turnOff();
+        writeLock.lock();
+        try{
+            for (var l : lights.values()) {
+                l.turnOff();
+            }
+        }finally{
+            writeLock.unlock();
         }
     }
 
@@ -93,8 +113,13 @@ public class Hub implements Runnable {
      * Turn on all the lights
      */
     public void turnOnAllLights() {
-        for (var l : lights.values()) {
-            l.turnOn();
+        writeLock.lock();
+        try{
+            for (var l : lights.values()) {
+                l.turnOn();
+            }
+        }finally{
+            writeLock.unlock();
         }
     }
 
@@ -109,7 +134,11 @@ public class Hub implements Runnable {
         lightIds = new ArrayList<>(lights.keySet());
         Collections.sort(lightIds);
         for (int id : lightIds) {
-            tmp.append(String.format("%s ", lights.get(id).isPowerOn() ? "ON" : "OF"));
+            try{
+                tmp.append(String.format("%s ", lights.get(id).isPowerOn() ? "ON" : "OF"));
+            }catch(NullPointerException e){
+                
+            }
         }
         return tmp.toString();
     }
@@ -135,5 +164,4 @@ public class Hub implements Runnable {
             }
         }
     }
-
 }

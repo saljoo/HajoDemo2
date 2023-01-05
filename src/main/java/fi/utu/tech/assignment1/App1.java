@@ -19,7 +19,6 @@ public class App1 {
                 e.printStackTrace();
             }
         });
-         
         System.out.printf("Got %d, expected %d%n", sharedCount.getCount(), threadCount);
     }
 }
@@ -50,7 +49,9 @@ class Counter extends Thread {
          * This thread's purpose in life is to 
          * increase the value of the shared count by one
          */
-        int oldCount = count.getCount();
-        count.setCount(oldCount + 1);
+        synchronized(count){
+            int oldCount = count.getCount();
+            count.setCount(oldCount + 1);
+        }
     }
 }

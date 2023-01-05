@@ -6,6 +6,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/*
+ * a)
+ * Tilannetta kutsutaan nimellä deadlock. Tässä tilanteessa käy esimerkiksi niin, että säie 1 lukitsee
+ * tilin 1. Tämän jälkeen säie 2 lukitsee tilin 2 ja jää odottamaan tilin 1 lukon avaamista, jotta
+ * se pystyy tekemään siirtonsa tilille 1. Säie 1 kuitenkin odottaa saman aikaan tilin 2 lukon avaamista,
+ * jotta se voi tehdä siirtonsa tilille 2. Tällä tavalla on syntynyt lukkiumatilanne.
+ */
+
 public class App4 {
     // Huom! Main-metodiin ei pitäisi tarvita tehdä muutoksia!
     // Main-metodi ainoastaan luo tilit ja alkaa tekemään samanaikaisia tilisiirtoja
@@ -71,26 +79,45 @@ class BankTransfer implements Runnable {
     public void run() {
         // Otetaan säikeen nimi kätevämmän nimiseen muuttujaan
         var name = Thread.currentThread().getName();
-        // Lukitan 1. tili
-        synchronized (from) {
-            // Lukko ensimmäiseen tiliin saatu, aloitetaan toisen tilin lukitus
-            System.out.printf("%s locked %d, waiting %d%n", name, from.accountNumber, to.accountNumber);
+
+        if(from.compareTo(to) == -1 || from.compareTo(to) == 0){
+            // Lukitaan 1. tili
+            synchronized (from) {
+                // Lukko ensimmäiseen tiliin saatu, aloitetaan toisen tilin lukitus
+                System.out.printf("%s locked %d, waiting %d%n", name, from.accountNumber, to.accountNumber);
+                synchronized (to) {
+                    // Säie sai yksinoikeudet molempiin tileihin, tarkistetaan tilien kate ja suoritetaan siirto,
+                    // jos lakiehdot täyttyvät
+                    System.out.printf("%s gained exclusive access to %d and %d%n", name, from.accountNumber,
+                            to.accountNumber);
+                    if ((from.getBalance() - amount) > 0 && (to.getBalance() + amount) <= 1000) {
+                        // Jos tässä kohtaa toinen siirtotapahtuma tekisi siirron, siirto voisi mennä yli lain rajojen
+                        from.withdraw(amount);
+                        to.deposit(amount);
+                    }
+                }
+            }
+        }else{
+            // Lukitaan 1. tili
             synchronized (to) {
-                // Säie sai yksinoikeudet molempiin tileihin, tarkistetaan tilien kate ja suoritetaan siirto,
-                // jos lakiehdot täyttyvät
-                System.out.printf("%s gained exclusive access to %d and %d%n", name, from.accountNumber,
-                        to.accountNumber);
-                if ((from.getBalance() - amount) > 0 && (to.getBalance() + amount) <= 1000) {
-                    // Jos tässä kohtaa toinen siirtotapahtuma tekisi siirron, siirto voisi mennä yli lain rajojen
-                    from.withdraw(amount);
-                    to.deposit(amount);
+                // Lukko ensimmäiseen tiliin saatu, aloitetaan toisen tilin lukitus
+                System.out.printf("%s locked %d, waiting %d%n", name, to.accountNumber, from.accountNumber);
+                synchronized (from) {
+                    // Säie sai yksinoikeudet molempiin tileihin, tarkistetaan tilien kate ja suoritetaan siirto,
+                    // jos lakiehdot täyttyvät
+                    System.out.printf("%s gained exclusive access to %d and %d%n", name, to.accountNumber,
+                            from.accountNumber);
+                    if ((from.getBalance() - amount) > 0 && (to.getBalance() + amount) <= 1000) {
+                        // Jos tässä kohtaa toinen siirtotapahtuma tekisi siirron, siirto voisi mennä yli lain rajojen
+                        from.withdraw(amount);
+                        to.deposit(amount);
+                    }
                 }
             }
         }
         // Tilisiirto suoritettu ja lukot avattu
         System.out.printf("%s unlocked %d and %d%n", name, from.accountNumber, to.accountNumber);
     }
-
 }
 
 /**

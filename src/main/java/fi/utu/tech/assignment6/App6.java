@@ -22,5 +22,4 @@ public class App6 {
         // koska sillä ole tässä kohtaa muutakaan tekemistä
         hub.run();
     }
-    
 }

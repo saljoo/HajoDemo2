@@ -3,11 +3,11 @@ package fi.utu.tech.assignment5;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Hub implements Runnable {
 
@@ -21,7 +21,7 @@ public class Hub implements Runnable {
      * 
      * @return The id of the newly-created light
      */
-    public int addLight() {
+    public synchronized int addLight() {
         int id = rnd.nextInt(1000);
         lights.put(id, new Light(id));
         return id;
@@ -74,17 +74,22 @@ public class Hub implements Runnable {
      * Turn off all the lights
      */
     public void turnOffAllLights() {
-        for (var l : lights.values()) {
-            l.turnOff();
+        synchronized(lights){
+            for (var l : lights.values()) {
+                l.turnOff();
+            }
         }
+
     }
 
     /**
      * Turn on all the lights
      */
     public void turnOnAllLights() {
-        for (var l : lights.values()) {
-            l.turnOn();
+        synchronized(lights){
+            for (var l : lights.values()) {
+                l.turnOn();
+            }
         }
     }
 
